@@ -1,50 +1,50 @@
 ﻿const properties = [
   {
     id: 1,
-    name: 'Apartamento Centro Premium',
-    price: 245000,
-    description: '2 habitaciones, 2 baños, terraza con vistas y excelente ubicación.',
-    location: 'Centro',
+    name: 'Departamento con vista al Paseo de Montejo',
+    price: 2450000,
+    description: '2 habitaciones, 2 baños y balcón con vista a una de las avenidas más icónicas de Mérida.',
+    location: 'Paseo de Montejo',
     type: 'Apartamento'
   },
   {
     id: 2,
-    name: 'Casa contemporánea en Norte',
-    price: 375000,
-    description: 'Jardín privado, acabados modernos y garaje doble.',
-    location: 'Norte',
+    name: 'Casa contemporánea en Altabrisa',
+    price: 3750000,
+    description: 'Jardín privado, acabados modernos y áreas sociales amplias.',
+    location: 'Altabrisa',
     type: 'Casa'
   },
   {
     id: 3,
-    name: 'Oficina ejecutiva en distrito financiero',
-    price: 520000,
-    description: 'Espacio corporativo listo para operar con salas de reuniones.',
-    location: 'Centro',
+    name: 'Oficina premium en City Center',
+    price: 5200000,
+    description: 'Espacio corporativo listo para operar cerca de centros comerciales y servicios.',
+    location: 'City Center',
     type: 'Oficina'
   },
   {
     id: 4,
-    name: 'Apartamento familiar en Sur',
-    price: 189000,
-    description: '3 habitaciones, zona tranquila y cerca de colegios.',
-    location: 'Sur',
-    type: 'Apartamento'
+    name: 'Casa familiar cerca de La Isla',
+    price: 1890000,
+    description: '3 habitaciones, área de juegos y ubicación cercana a colegios y plazas comerciales.',
+    location: 'Norte',
+    type: 'Casa'
   },
   {
     id: 5,
-    name: 'Casa con piscina en Este',
-    price: 620000,
-    description: 'Amplios espacios, terraza y diseño arquitectónico único.',
-    location: 'Este',
+    name: 'Casa con piscina en Temozón',
+    price: 6200000,
+    description: 'Amplios espacios, piscina privada y diseño ideal para familia numerosa.',
+    location: 'Temozón',
     type: 'Casa'
   },
   {
     id: 6,
-    name: 'Oficina flexible en Oeste',
-    price: 310000,
-    description: 'Planta abierta con excelente iluminación natural.',
-    location: 'Oeste',
+    name: 'Oficina ejecutiva en Plaza Galerías',
+    price: 3100000,
+    description: 'Planta abierta con excelente iluminación y ubicación estratégica.',
+    location: 'Norte',
     type: 'Oficina'
   }
 ];
@@ -55,7 +55,7 @@ const contactForm = document.getElementById('contactForm');
 const formStatus = document.getElementById('formStatus');
 
 function formatPrice(value) {
-  return `${value.toLocaleString('es-ES')} €`;
+  return `$ ${value.toLocaleString('es-MX')}`;
 }
 
 function renderProperties(list) {
