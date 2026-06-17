@@ -1,0 +1,29 @@
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Node / frontend
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+/dist
+/build
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+venv/
+
+# GitHub Pages
+*.publish
+
+# Otros
+*.tmp
+*.swp
