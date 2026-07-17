@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StreamVerse</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -17,16 +17,11 @@
             <a href="#">Películas</a>
             <a href="#">Mi lista</a>
           </div>
-          <div class="nav-actions">
-            <button class="icon-btn" aria-label="Buscar">🔍</button>
-            <div class="profile">S</div>
-          </div>
         </nav>
         <div class="hero-content">
-          <span class="badge">NUEVA TEMPORADA</span>
+          <p class="eyebrow">NUEVA TEMPORADA</p>
           <h1>La ciudad que nunca duerme</h1>
-          <p class="hero-description">Una serie intensa, urbana y cargada de suspense, con el ritmo de una producción premium.</p>
-          <div class="hero-meta">Serie · 2026 · Suspenso · 3 temporadas</div>
+          <p>Una serie intensa, urbana y cargada de suspense, con el ritmo de una producción premium.</p>
           <div class="hero-actions">
             <button class="btn btn-primary">▶ Reproducir</button>
             <button class="btn btn-secondary">+ Mi lista</button>
@@ -36,29 +31,20 @@
 
       <main>
         <section class="row">
-          <div class="row-header">
-            <h2>Continuar viendo</h2>
-            <a class="row-link" href="#">Ver todo</a>
-          </div>
+          <h2>Continuar viendo</h2>
           <div id="novedades" class="cards"></div>
         </section>
         <section class="row">
-          <div class="row-header">
-            <h2>Solo para ti</h2>
-            <a class="row-link" href="#">Ver todo</a>
-          </div>
+          <h2>Solo para ti</h2>
           <div id="para-ti" class="cards"></div>
         </section>
         <section class="row">
-          <div class="row-header">
-            <h2>Top 10 en México</h2>
-            <a class="row-link" href="#">Ver todo</a>
-          </div>
+          <h2>Top 10 en México</h2>
           <div id="top10" class="cards"></div>
         </section>
       </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="/app.js"></script>
   </body>
 </html>
