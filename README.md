@@ -1,4 +1,4 @@
-# STREAMVERSE
+# STREAMVERSE v1.0
 
 Plataforma de streaming inspirada en Netflix con autenticación, base de datos MySQL y catálogo dinámico de películas y series.
 
