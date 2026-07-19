@@ -39,7 +39,7 @@ const demoContent = [
   }
 ];
 
-async function getContent() {
+async function getConnection() {
   const host = process.env.DB_HOST;
   const user = process.env.DB_USER;
   const password = process.env.DB_PASSWORD;
@@ -47,10 +47,10 @@ async function getContent() {
   const port = Number(process.env.DB_PORT || 3306);
 
   if (!host || !user || !password || !database) {
-    return demoContent;
+    return null;
   }
 
-  const connection = await mysql.createConnection({
+  return mysql.createConnection({
     host,
     user,
     password,
@@ -58,6 +58,14 @@ async function getContent() {
     port,
     ssl: { rejectUnauthorized: false }
   });
+}
+
+async function getContent() {
+  const connection = await getConnection();
+
+  if (!connection) {
+    return demoContent;
+  }
 
   try {
     const [rows] = await connection.execute('SELECT id, title, category, description, image, year, rating FROM contenido ORDER BY id');
@@ -67,4 +75,40 @@ async function getContent() {
   }
 }
 
-module.exports = { getContent };
+async function authenticateUser(email, password) {
+  const connection = await getConnection();
+
+  if (!connection) {
+    return null;
+  }
+
+  try {
+    const [rows] = await connection.execute('SELECT id, email, name FROM usuarios WHERE email = ? AND password = ?', [email, password]);
+    return rows[0] || null;
+  } finally {
+    await connection.end();
+  }
+}
+
+async function registerUser(name, email, password) {
+  const connection = await getConnection();
+
+  if (!connection) {
+    return null;
+  }
+
+  try {
+    const [existing] = await connection.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return { error: 'El correo ya está registrado' };
+    }
+
+    await connection.execute('INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
+    const [rows] = await connection.execute('SELECT id, email, name FROM usuarios WHERE email = ? AND password = ?', [email, password]);
+    return rows[0] || null;
+  } finally {
+    await connection.end();
+  }
+}
+
+module.exports = { getContent, authenticateUser, registerUser };

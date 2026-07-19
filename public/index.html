@@ -7,7 +7,30 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div id="login-screen" class="auth-screen">
+      <div class="auth-card">
+        <h1>Inicia sesión</h1>
+        <p>Accede a tu cuenta para disfrutar contenido exclusivo.</p>
+        <form id="login-form" class="auth-form">
+          <input type="email" id="email" placeholder="Correo electrónico" required />
+          <input type="password" id="password" placeholder="Contraseña" required />
+          <button type="submit" class="btn btn-primary">Iniciar sesión</button>
+          <button type="button" id="show-register" class="btn btn-secondary">Crear cuenta</button>
+          <p id="auth-message" class="auth-message"></p>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <input type="text" id="register-name" placeholder="Tu nombre" required />
+          <input type="email" id="register-email" placeholder="Correo electrónico" required />
+          <input type="password" id="register-password" placeholder="Contraseña" required />
+          <button type="submit" class="btn btn-primary">Registrarme</button>
+          <button type="button" id="show-login" class="btn btn-secondary">Ya tengo cuenta</button>
+          <p id="register-message" class="auth-message"></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="app-shell" class="app-shell hidden">
       <header class="hero">
         <nav class="nav-bar">
           <div class="brand">STREAMVERSE</div>
@@ -17,11 +40,16 @@
             <a href="#">Películas</a>
             <a href="#">Mi lista</a>
           </div>
+          <div class="nav-actions">
+            <button class="icon-btn" aria-label="Buscar">🔍</button>
+            <div class="profile" id="profile-name">S</div>
+          </div>
         </nav>
         <div class="hero-content">
-          <p class="eyebrow">NUEVA TEMPORADA</p>
+          <span class="badge">NUEVA TEMPORADA</span>
           <h1>La ciudad que nunca duerme</h1>
-          <p>Una serie intensa, urbana y cargada de suspense, con el ritmo de una producción premium.</p>
+          <p class="hero-description">Una serie intensa, urbana y cargada de suspense, con el ritmo de una producción premium.</p>
+          <div class="hero-meta">Serie · 2026 · Suspenso · 3 temporadas</div>
           <div class="hero-actions">
             <button class="btn btn-primary">▶ Reproducir</button>
             <button class="btn btn-secondary">+ Mi lista</button>
@@ -31,15 +59,24 @@
 
       <main>
         <section class="row">
-          <h2>Continuar viendo</h2>
+          <div class="row-header">
+            <h2>Continuar viendo</h2>
+            <a class="row-link" href="#">Ver todo</a>
+          </div>
           <div id="novedades" class="cards"></div>
         </section>
         <section class="row">
-          <h2>Solo para ti</h2>
+          <div class="row-header">
+            <h2>Solo para ti</h2>
+            <a class="row-link" href="#">Ver todo</a>
+          </div>
           <div id="para-ti" class="cards"></div>
         </section>
         <section class="row">
-          <h2>Top 10 en México</h2>
+          <div class="row-header">
+            <h2>Top 10 en México</h2>
+            <a class="row-link" href="#">Ver todo</a>
+          </div>
           <div id="top10" class="cards"></div>
         </section>
       </main>

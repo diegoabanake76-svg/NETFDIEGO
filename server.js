@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
-const { getContent } = require('./db');
+const { getContent, authenticateUser, registerUser } = require('./db');
 
 dotenv.config();
 
@@ -18,6 +18,44 @@ app.get('/api/content', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'No se pudieron cargar los contenidos' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    const user = await authenticateUser(email, password);
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
+    }
+
+    const result = await registerUser(name, email, password);
+    if (!result || result.error) {
+      return res.status(409).json({ error: result?.error || 'No se pudo crear el usuario' });
+    }
+
+    res.json({ success: true, user: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear el usuario' });
   }
 });
 

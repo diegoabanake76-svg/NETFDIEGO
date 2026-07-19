@@ -48,6 +48,62 @@ button {
   min-height: 100vh;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(90deg, rgba(0,0,0,0.95), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1800&q=80') center/cover;
+  padding: 2rem;
+}
+
+.auth-card {
+  width: min(430px, 100%);
+  background: rgba(0,0,0,0.82);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h1 {
+  font-size: 2rem;
+  margin: 0 0 0.75rem;
+}
+
+.auth-card p {
+  color: var(--muted);
+  margin: 0 0 1.2rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+
+.auth-form .btn-secondary {
+  background: rgba(255,255,255,0.1);
+}
+
+.auth-message {
+  color: #ffb4b4;
+  font-size: 0.95rem;
+  min-height: 1.3rem;
+  margin-top: 0.3rem;
+}
+
 .hero {
   min-height: 92vh;
   padding: 1.2rem 2rem 3rem;
@@ -219,7 +275,8 @@ main {
   gap: 1rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.8rem;
+  padding-top: 0.2rem;
 }
 
 .cards::-webkit-scrollbar {
@@ -238,13 +295,22 @@ main {
   box-shadow: var(--shadow);
   border: 1px solid rgba(255,255,255,0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  min-width: 260px;
+  min-width: 240px;
   scroll-snap-align: start;
+  position: relative;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 100%);
+  pointer-events: none;
 }
 
 .card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 26px 58px rgba(0,0,0,0.45);
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 28px 70px rgba(0,0,0,0.55);
   border-color: rgba(229,9,20,0.45);
 }
 
