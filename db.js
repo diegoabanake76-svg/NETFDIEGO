@@ -3,6 +3,11 @@ const mysql = require('mysql2/promise');
 
 dotenv.config();
 
+// Almacenamiento en memoria para usuarios registrados en Vercel
+const inMemoryUsers = new Map();
+inMemoryUsers.set('demo@example.com', { id: 1, email: 'demo@example.com', password: '123456', name: 'Demo User' });
+inMemoryUsers.set('test@example.com', { id: 2, email: 'test@example.com', password: 'password123', name: 'Test User' });
+
 const demoContent = [
   {
     id: 1,
@@ -104,22 +109,36 @@ async function getConnection() {
   const port = Number(process.env.DB_PORT || 3306);
 
   if (!host || !user || !password || !database) {
+    console.warn('⚠️ Credenciales de BD incompletas, usando datos demo');
     return null;
   }
+
+  console.log(`🔌 Intentando conectar a ${host}:${port}/${database}`);
 
   const connectionOptions = {
     host,
     user,
     password,
     database,
-    port
+    port,
+    enableKeepAlive: true,
+    waitForConnections: true,
+    connectionLimit: 1,
+    queueLimit: 0
   };
 
   if (process.env.DB_SSL && process.env.DB_SSL.toLowerCase() === 'true') {
     connectionOptions.ssl = { rejectUnauthorized: false };
   }
 
-  return mysql.createConnection(connectionOptions);
+  try {
+    const conn = await mysql.createConnection(connectionOptions);
+    console.log('✅ Conectado a la base de datos');
+    return conn;
+  } catch (error) {
+    console.error('❌ Error de conexión a BD:', error.message);
+    return null;
+  }
 }
 
 async function ensureSchema(connection) {
@@ -177,9 +196,20 @@ async function getContent() {
 }
 
 async function authenticateUser(email, password) {
-  const connection = await getConnection();
+  // Revisar usuarios en memoria primero
+  if (inMemoryUsers.has(email)) {
+    const user = inMemoryUsers.get(email);
+    if (user.password === password) {
+      return { id: user.id, email: user.email, name: user.name };
+    } else {
+      return null; // Contraseña incorrecta
+    }
+  }
 
+  // Intentar conectar a BD real
+  const connection = await getConnection();
   if (!connection) {
+    console.warn('⚠️ BD no disponible, usuario no encontrado en memoria');
     return null;
   }
 
@@ -187,31 +217,48 @@ async function authenticateUser(email, password) {
     await ensureSchema(connection);
     const [rows] = await connection.execute('SELECT id, email, name FROM usuarios WHERE email = ? AND password = ?', [email, password]);
     return rows[0] || null;
+  } catch (error) {
+    console.error('❌ Error en autenticación:', error.message);
+    return null;
   } finally {
     await connection.end();
   }
 }
 
 async function registerUser(name, email, password) {
+  // Revisar si el correo ya existe (en memoria o BD)
+  if (inMemoryUsers.has(email)) {
+    return { error: 'El correo ya está registrado' };
+  }
+
+  // Crear usuario en memoria (para Vercel)
+  const newUser = {
+    id: inMemoryUsers.size + 1,
+    email,
+    password,
+    name
+  };
+  inMemoryUsers.set(email, newUser);
+  
+  console.log(`✅ Usuario registrado en memoria: ${email}`);
+  
+  // Intentar guardar en BD real también
   const connection = await getConnection();
-
-  if (!connection) {
-    return null;
-  }
-
-  try {
-    await ensureSchema(connection);
-    const [existing] = await connection.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (existing.length > 0) {
-      return { error: 'El correo ya está registrado' };
+  if (connection) {
+    try {
+      await ensureSchema(connection);
+      const [existing] = await connection.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
+      if (existing.length === 0) {
+        await connection.execute('INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
+      }
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar en BD, usando memoria:', error.message);
+    } finally {
+      await connection.end();
     }
-
-    await connection.execute('INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
-    const [rows] = await connection.execute('SELECT id, email, name FROM usuarios WHERE email = ? AND password = ?', [email, password]);
-    return rows[0] || null;
-  } finally {
-    await connection.end();
   }
+
+  return { id: newUser.id, email: newUser.email, name: newUser.name };
 }
 
 module.exports = { getContent, authenticateUser, registerUser };
