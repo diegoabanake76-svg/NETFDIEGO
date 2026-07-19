@@ -1,9 +1,10 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
-const { getContent, authenticateUser, registerUser } = require('./db');
 
 dotenv.config();
+
+const { getContent, authenticateUser, registerUser } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,7 +37,7 @@ app.post('/api/login', async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al iniciar sesión' });
+    res.status(500).json({ error: error.message || 'Error al iniciar sesión' });
   }
 });
 
@@ -55,7 +56,7 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true, user: result });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al crear el usuario' });
+    res.status(500).json({ error: error.message || 'Error al crear el usuario' });
   }
 });
 
@@ -64,6 +65,10 @@ app.get('/inmobiliaria', (req, res) => {
 });
 
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Ruta de API no encontrada' });
+  }
+
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

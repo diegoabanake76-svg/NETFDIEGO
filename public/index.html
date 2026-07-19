@@ -35,14 +35,27 @@
         <nav class="nav-bar">
           <div class="brand">STREAMVERSE</div>
           <div class="nav-links">
-            <a href="#">Inicio</a>
-            <a href="#">Series</a>
-            <a href="#">Películas</a>
-            <a href="#">Mi lista</a>
+            <a href="#" class="nav-link active" data-view="home">Inicio</a>
+            <a href="#" class="nav-link" data-view="series">Series</a>
+            <a href="#" class="nav-link" data-view="movies">Películas</a>
+            <a href="#" class="nav-link" data-view="wishlist">Mi lista</a>
           </div>
           <div class="nav-actions">
-            <button class="icon-btn" aria-label="Buscar">🔍</button>
-            <div class="profile" id="profile-name">S</div>
+            <input type="text" id="search-input" class="search-input" placeholder="Buscar películas o series" />
+            <div class="profile-wrapper">
+              <button class="profile" id="profile-trigger" aria-haspopup="menu" aria-expanded="false" title="Opciones de perfil">
+                <span id="profile-name">S</span>
+              </button>
+              <div id="profile-menu" class="profile-menu hidden" role="menu">
+                <div class="profile-menu-header">
+                  <strong id="profile-menu-name">Usuario</strong>
+                  <span id="profile-menu-email">usuario@ejemplo.com</span>
+                </div>
+                <button class="profile-menu-item" type="button" data-action="profile" role="menuitem">👤 Ver perfil</button>
+                <button class="profile-menu-item" type="button" data-action="settings" role="menuitem">⚙️ Configuración</button>
+                <button class="profile-menu-item danger" type="button" data-action="logout" role="menuitem">↩️ Cerrar sesión</button>
+              </div>
+            </div>
           </div>
         </nav>
         <div class="hero-content">
@@ -58,28 +71,130 @@
       </header>
 
       <main>
+        <section id="view-home" class="view-section">
+        <section class="featured-panel">
+          <div class="featured-copy">
+            <span class="pill">Exclusivo ahora</span>
+            <h2>Estrenos que debes ver esta semana</h2>
+            <p>Una selección premium con thrillers, dramas y documentales creados para una noche de cine en casa.</p>
+          </div>
+          <div class="featured-cards">
+            <div class="mini-card">Suspenso</div>
+            <div class="mini-card">Drama</div>
+            <div class="mini-card">Realidad</div>
+          </div>
+        </section>
+
         <section class="row">
           <div class="row-header">
             <h2>Continuar viendo</h2>
-            <a class="row-link" href="#">Ver todo</a>
+            <a class="row-link" href="#" data-view="series">Ver todo</a>
           </div>
           <div id="novedades" class="cards"></div>
         </section>
         <section class="row">
           <div class="row-header">
             <h2>Solo para ti</h2>
-            <a class="row-link" href="#">Ver todo</a>
+            <a class="row-link" href="#" data-view="movies">Ver todo</a>
           </div>
           <div id="para-ti" class="cards"></div>
         </section>
         <section class="row">
           <div class="row-header">
             <h2>Top 10 en México</h2>
-            <a class="row-link" href="#">Ver todo</a>
+            <a class="row-link" href="#" data-view="home">Ver todo</a>
           </div>
           <div id="top10" class="cards"></div>
         </section>
+        <section class="row">
+          <div class="row-header">
+            <h2>Trending ahora</h2>
+            <a class="row-link" href="#" data-view="wishlist">Ver todo</a>
+          </div>
+          <div id="trending" class="cards"></div>
+        </section>
+        </section>
+
+        <section id="view-series" class="view-section hidden">
+          <div class="section-hero">
+            <h2>Series exclusivas</h2>
+            <p>Descubre historias originales, suspenso y drama con una calidad premium.</p>
+          </div>
+          <div id="series-view" class="cards"></div>
+        </section>
+
+        <section id="view-movies" class="view-section hidden">
+          <div class="section-hero">
+            <h2>Películas destacadas</h2>
+            <p>Una colección de películas con grandes historias y visuales impactantes.</p>
+          </div>
+          <div id="movies-view" class="cards"></div>
+        </section>
+
+        <section id="view-wishlist" class="view-section hidden">
+          <div class="section-hero">
+            <h2>Mi lista</h2>
+            <p>Guarda tus favoritos y vuelve a ellos cuando quieras.</p>
+          </div>
+          <div id="wishlist-view" class="cards"></div>
+        </section>
       </main>
+
+      <footer class="footer-panel">
+        <h3>Tu próxima obsesión está aquí</h3>
+        <p>Explora series exclusivas, originales y clásicos modernos en una sola pantalla.</p>
+      </footer>
+    </div>
+
+    <div id="movie-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card">
+        <button class="modal-close" id="close-modal" aria-label="Cerrar">×</button>
+        <div class="modal-media">
+          <img id="modal-image" src="" alt="" />
+        </div>
+        <div class="modal-content">
+          <div class="modal-badges">
+            <span id="modal-category" class="pill"></span>
+            <span id="modal-year" class="pill subtle"></span>
+          </div>
+          <h2 id="modal-title">Título</h2>
+          <p id="modal-description"></p>
+          <div class="modal-meta">
+            <span id="modal-rating"></span>
+            <span>•</span>
+            <span>Subtítulos en español</span>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" id="watch-btn">▶ Ver ahora</button>
+            <button class="btn btn-secondary" id="list-btn">+ Mi lista</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="player-screen" class="player-screen hidden">
+      <div class="player-backdrop"></div>
+      <div class="player-content">
+        <button class="modal-close" id="close-player" aria-label="Cerrar">×</button>
+        <div class="player-video">
+          <div class="video-placeholder">
+            <div class="play-button">▶</div>
+            <p>Reproduciendo preview</p>
+          </div>
+        </div>
+        <div class="player-info">
+          <h2 id="player-title">Título</h2>
+          <p id="player-desc"></p>
+          <div class="player-meta">
+            <span id="player-meta"></span>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" id="resume-btn">▶ Continuar</button>
+            <button class="btn btn-secondary" id="back-btn">← Volver</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="/app.js"></script>

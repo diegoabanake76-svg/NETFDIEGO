@@ -1,7 +1,7 @@
 {
-  "name": "netflix-style-platform",
+  "name": "streamverse",
   "version": "1.0.0",
-  "description": "Plataforma tipo Netflix con datos desde base de datos",
+  "description": "Plataforma de streaming estilo Netflix con autenticación y base de datos MySQL",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

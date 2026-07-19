@@ -1,33 +1,52 @@
-# Innova Propiedades
+# STREAMVERSE
 
-Sitio web estático de una inmobiliaria creado con HTML, CSS y JavaScript.
+Plataforma de streaming inspirada en Netflix con autenticación, base de datos MySQL y catálogo dinámico de películas y series.
 
-## Contenido
+## Características
 
-- `index.html`: página principal.
-- `styles.css`: estilos visuales.
-- `script.js`: lógica de filtrado de propiedades y formulario de contacto.
+- 🎬 Interfaz estilo Netflix con hero banner y filas de contenido
+- 👤 Autenticación de usuarios (login y registro)
+- 🗄️ Base de datos MySQL para usuarios y contenido
+- 🔍 Buscador de películas y series
+- 📱 Diseño responsive
+- 🎭 Modal de detalles y pantalla de reproducción
+- 🎨 Animaciones suaves y interfaz moderna
+
+## Estructura del Proyecto
+
+- `server.js`: Servidor Express con rutas de API
+- `db.js`: Conexión y manejo de base de datos MySQL
+- `public/index.html`: Interfaz principal
+- `public/app.js`: Lógica del frontend
+- `public/styles.css`: Estilos de la aplicación
+- `.env`: Variables de entorno (conexión a BD)
 
 ## Cómo usar
 
-1. Abre `index.html` en un navegador moderno.
-2. O usa un servidor local, por ejemplo con Python:
+1. Instala las dependencias:
 
 ```bash
-cd tienda-ropa
-python -m http.server 8000
+npm install
 ```
 
-3. Visita `http://localhost:8000`.
+2. Configura tu `.env` con los datos de conexión MySQL
 
-## Publicación en GitHub Pages
+3. Inicia el servidor:
 
-1. Asegúrate de que este repositorio tenga la rama `main`.
-2. En GitHub, ve a `Settings` > `Pages`.
-3. Selecciona la rama `main` y la carpeta `/`.
-4. Guarda y abre el enlace proporcionado.
+```bash
+node server.js
+```
 
-## Notas
+4. Abre `http://localhost:3000` en tu navegador
 
-- El formulario de contacto es simulado y muestra un mensaje localmente.
-- Puedes editar los valores del array `properties` en `script.js` para cambiar las propiedades listadas.
+## Cuenta de prueba
+
+- Email: `demo@example.com`
+- Contraseña: `123456`
+
+## Tecnologías
+
+- Node.js + Express
+- MySQL 8.0+
+- HTML5, CSS3, Vanilla JavaScript
+- Dotenv para variables de entorno

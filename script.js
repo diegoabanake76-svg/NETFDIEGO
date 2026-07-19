@@ -1,6 +1,13 @@
 ﻿async function loadContent() {
   try {
     const res = await fetch('/api/content');
+    const contentType = res.headers.get('content-type') || '';
+
+    if (!res.ok || !contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(text || 'No se pudo cargar el contenido');
+    }
+
     const data = await res.json();
 
     const groups = {
