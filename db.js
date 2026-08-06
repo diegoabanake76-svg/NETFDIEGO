@@ -1,5 +1,6 @@
 const dotenv = require('dotenv');
 const mysql = require('mysql2/promise');
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -141,6 +142,10 @@ async function getConnection() {
   }
 }
 
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
 async function ensureSchema(connection) {
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS contenido (
@@ -162,6 +167,50 @@ async function ensureSchema(connection) {
       password VARCHAR(255) NOT NULL
     )
   `);
+
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      token VARCHAR(64) NOT NULL UNIQUE,
+      created_at DATETIME NOT NULL,
+      expires_at DATETIME NOT NULL,
+      revoked_at DATETIME NULL,
+      FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    )
+  `);
+}
+
+async function createSession(connection, userId) {
+  const token = generateToken();
+
+  const [result] = await connection.execute(
+    'INSERT INTO sessions (user_id, token, created_at, expires_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 SECOND))',
+    [userId, token]
+  );
+
+  const [rows] = await connection.execute('SELECT expires_at FROM sessions WHERE id = ?', [result.insertId]);
+  const expiresAt = rows[0]?.expires_at ? new Date(rows[0].expires_at).toISOString() : new Date(Date.now() + 30_000).toISOString();
+
+  return {
+    token,
+    expiresAt
+  };
+}
+
+async function refreshSessionToken(connection, token) {
+  await connection.execute('UPDATE sessions SET expires_at = DATE_ADD(NOW(), INTERVAL 30 SECOND) WHERE token = ? AND revoked_at IS NULL', [token]);
+
+  const [rows] = await connection.execute('SELECT expires_at FROM sessions WHERE token = ? AND revoked_at IS NULL', [token]);
+  const expiresAt = rows[0]?.expires_at ? new Date(rows[0].expires_at).toISOString() : new Date(Date.now() + 30_000).toISOString();
+
+  return {
+    expiresAt
+  };
+}
+
+async function revokeSession(connection, token) {
+  await connection.execute('UPDATE sessions SET revoked_at = CURRENT_TIMESTAMP WHERE token = ? AND revoked_at IS NULL', [token]);
 }
 
 async function seedContentIfEmpty(connection) {
@@ -196,17 +245,21 @@ async function getContent() {
 }
 
 async function authenticateUser(email, password) {
-  // Revisar usuarios en memoria primero
   if (inMemoryUsers.has(email)) {
     const user = inMemoryUsers.get(email);
     if (user.password === password) {
-      return { id: user.id, email: user.email, name: user.name };
-    } else {
-      return null; // Contraseña incorrecta
+      const expiresAt = new Date(Date.now() + 30_000);
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        token: generateToken(),
+        expiresAt: expiresAt.toISOString()
+      };
     }
+    return null;
   }
 
-  // Intentar conectar a BD real
   const connection = await getConnection();
   if (!connection) {
     console.warn('⚠️ BD no disponible, usuario no encontrado en memoria');
@@ -216,7 +269,20 @@ async function authenticateUser(email, password) {
   try {
     await ensureSchema(connection);
     const [rows] = await connection.execute('SELECT id, email, name FROM usuarios WHERE email = ? AND password = ?', [email, password]);
-    return rows[0] || null;
+    if (!rows[0]) {
+      return null;
+    }
+
+    const user = rows[0];
+    const session = await createSession(connection, user.id);
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      token: session.token,
+      expiresAt: session.expiresAt
+    };
   } catch (error) {
     console.error('❌ Error en autenticación:', error.message);
     return null;
@@ -226,31 +292,28 @@ async function authenticateUser(email, password) {
 }
 
 async function registerUser(name, email, password) {
-  // Revisar si el correo ya existe (en memoria o BD)
   if (inMemoryUsers.has(email)) {
     return { error: 'El correo ya está registrado' };
   }
 
-  // Crear usuario en memoria (para Vercel)
-  const newUser = {
-    id: inMemoryUsers.size + 1,
-    email,
-    password,
-    name
-  };
-  inMemoryUsers.set(email, newUser);
-  
-  console.log(`✅ Usuario registrado en memoria: ${email}`);
-  
-  // Intentar guardar en BD real también
   const connection = await getConnection();
   if (connection) {
     try {
       await ensureSchema(connection);
       const [existing] = await connection.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
-      if (existing.length === 0) {
-        await connection.execute('INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
+      if (existing.length > 0) {
+        return { error: 'El correo ya está registrado' };
       }
+
+      const [result] = await connection.execute('INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
+      const session = await createSession(connection, result.insertId);
+      return {
+        id: result.insertId,
+        email,
+        name,
+        token: session.token,
+        expiresAt: session.expiresAt
+      };
     } catch (error) {
       console.warn('⚠️ No se pudo guardar en BD, usando memoria:', error.message);
     } finally {
@@ -258,7 +321,86 @@ async function registerUser(name, email, password) {
     }
   }
 
+  const newUser = {
+    id: inMemoryUsers.size + 1,
+    email,
+    password,
+    name
+  };
+  inMemoryUsers.set(email, newUser);
+
+  console.log(`✅ Usuario registrado en memoria: ${email}`);
   return { id: newUser.id, email: newUser.email, name: newUser.name };
 }
 
-module.exports = { getContent, authenticateUser, registerUser };
+async function validateSession(token) {
+  const connection = await getConnection();
+  if (!connection) {
+    return null;
+  }
+
+  try {
+    await ensureSchema(connection);
+    const [rows] = await connection.execute(`
+      SELECT u.id, u.email, u.name, s.token, s.expires_at
+      FROM sessions s
+      JOIN usuarios u ON s.user_id = u.id
+      WHERE s.token = ? AND s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP()
+    `, [token]);
+
+    if (!rows[0]) {
+      return null;
+    }
+
+    return {
+      user: {
+        id: rows[0].id,
+        email: rows[0].email,
+        name: rows[0].name
+      },
+      token: rows[0].token,
+      expiresAt: new Date(rows[0].expires_at).toISOString()
+    };
+  } catch (error) {
+    console.error('❌ Error al validar sesión:', error.message);
+    return null;
+  } finally {
+    await connection.end();
+  }
+}
+
+async function refreshSession(token) {
+  const connection = await getConnection();
+  if (!connection) {
+    return null;
+  }
+
+  try {
+    await ensureSchema(connection);
+    const result = await refreshSessionToken(connection, token);
+    return result;
+  } catch (error) {
+    console.error('❌ Error al refrescar sesión:', error.message);
+    return null;
+  } finally {
+    await connection.end();
+  }
+}
+
+async function logoutSession(token) {
+  const connection = await getConnection();
+  if (!connection) {
+    return;
+  }
+
+  try {
+    await ensureSchema(connection);
+    await revokeSession(connection, token);
+  } catch (error) {
+    console.error('❌ Error al cerrar sesión:', error.message);
+  } finally {
+    await connection.end();
+  }
+}
+
+module.exports = { getContent, authenticateUser, registerUser, validateSession, refreshSession, logoutSession };

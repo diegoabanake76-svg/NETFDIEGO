@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const { getContent, authenticateUser, registerUser } = require('./db');
+const { getContent, authenticateUser, registerUser, validateSession, refreshSession, logoutSession } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +38,58 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message || 'Error al iniciar sesión' });
+  }
+});
+
+app.get('/api/session', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+    if (!token) {
+      return res.status(401).json({ error: 'Sesión no encontrada' });
+    }
+
+    const session = await validateSession(token);
+    if (!session) {
+      return res.status(401).json({ error: 'Sesión expirada' });
+    }
+
+    res.json({ success: true, session });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se pudo validar la sesión' });
+  }
+});
+
+app.post('/api/session/refresh', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.body?.token;
+    if (!token) {
+      return res.status(400).json({ error: 'Token requerido' });
+    }
+
+    const refreshed = await refreshSession(token);
+    if (!refreshed) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada' });
+    }
+
+    res.json({ success: true, refreshed });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se pudo refrescar la sesión' });
+  }
+});
+
+app.post('/api/logout', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.body?.token;
+    if (token) {
+      await logoutSession(token);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se pudo cerrar la sesión' });
   }
 });
 

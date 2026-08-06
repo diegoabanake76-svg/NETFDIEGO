@@ -35,6 +35,10 @@ const playerMeta = document.getElementById('player-meta');
 let currentUser = null;
 let allContent = [];
 let activeView = 'home';
+let sessionToken = null;
+let sessionTimer = null;
+const SESSION_LIFETIME_MS = 30_000;
+const SESSION_REFRESH_BEFORE_MS = 5_000;
 
 async function loadContent() {
   try {
@@ -173,7 +177,30 @@ function closeProfileMenu() {
   profileTrigger.setAttribute('aria-expanded', 'false');
 }
 
-function logoutUser() {
+function clearSessionTimer() {
+  if (sessionTimer) {
+    clearTimeout(sessionTimer);
+    sessionTimer = null;
+  }
+}
+
+async function logoutUser() {
+  clearSessionTimer();
+  if (sessionToken) {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`
+        }
+      });
+    } catch (error) {
+      console.warn('No se pudo cerrar la sesión del servidor', error);
+    }
+  }
+
+  sessionToken = null;
   currentUser = null;
   updateProfileUI();
   closeProfileMenu();
@@ -191,6 +218,69 @@ function logoutUser() {
   closeMovieModal();
   closePlayer();
   showView('home');
+}
+
+function scheduleSessionTimeout() {
+  clearSessionTimer();
+  sessionTimer = setTimeout(async () => {
+    await logoutUser();
+    authMessage.textContent = 'Tu sesión expiró por inactividad.';
+  }, SESSION_LIFETIME_MS);
+}
+
+async function touchSession() {
+  if (!sessionToken) return;
+
+  try {
+    const res = await fetch('/api/session/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionToken}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Sesión inválida');
+    }
+    if (data.refreshed?.expiresAt) {
+      currentUser = { ...currentUser, expiresAt: data.refreshed.expiresAt };
+    }
+    scheduleSessionTimeout();
+  } catch (error) {
+    console.warn('No se pudo refrescar la sesión', error);
+    await logoutUser();
+    authMessage.textContent = 'Tu sesión expiró por inactividad.';
+  }
+}
+
+async function restoreSession() {
+  const storedToken = localStorage.getItem('streamverse_token');
+  if (!storedToken) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/session', {
+      headers: { Authorization: `Bearer ${storedToken}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Sesión inválida');
+    }
+
+    sessionToken = storedToken;
+    currentUser = { ...data.session.user, token: data.session.token, expiresAt: data.session.expiresAt };
+    updateProfileUI();
+    loginScreen.classList.add('hidden');
+    appShell.classList.remove('hidden');
+    await loadContent();
+    scheduleSessionTimeout();
+  } catch (error) {
+    localStorage.removeItem('streamverse_token');
+    sessionToken = null;
+    currentUser = null;
+  }
 }
 
 function openPlayer(item) {
@@ -235,14 +325,20 @@ listBtn.addEventListener('click', () => {
   }, 1200);
 });
 navLinks.forEach(link => {
-  link.addEventListener('click', (event) => {
+  link.addEventListener('click', async (event) => {
     event.preventDefault();
+    if (sessionToken) {
+      await touchSession();
+    }
     showView(link.dataset.view);
   });
 });
 
-profileTrigger.addEventListener('click', (event) => {
+profileTrigger.addEventListener('click', async (event) => {
   event.stopPropagation();
+  if (sessionToken) {
+    await touchSession();
+  }
   toggleProfileMenu();
 });
 
@@ -266,20 +362,29 @@ profileMenu.addEventListener('click', (event) => {
   }
 });
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
+  if (sessionToken && (profileTrigger.contains(event.target) || profileMenu.contains(event.target) || event.target.closest('.nav-link') || event.target.closest('.row-link'))) {
+    await touchSession();
+  }
   if (!profileTrigger.contains(event.target) && !profileMenu.contains(event.target)) {
     closeProfileMenu();
   }
 });
 
 rowLinks.forEach(link => {
-  link.addEventListener('click', (event) => {
+  link.addEventListener('click', async (event) => {
     event.preventDefault();
+    if (sessionToken) {
+      await touchSession();
+    }
     showView(link.dataset.view);
   });
 });
 
-searchInput.addEventListener('input', (event) => {
+searchInput.addEventListener('input', async (event) => {
+  if (sessionToken) {
+    await touchSession();
+  }
   const query = event.target.value.trim().toLowerCase();
   const filtered = allContent.filter(item => `${item.title} ${item.description} ${item.category}`.toLowerCase().includes(query));
 
@@ -287,7 +392,10 @@ searchInput.addEventListener('input', (event) => {
   showView(activeView);
 });
 
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', async (event) => {
+  if (sessionToken && !['Escape'].includes(event.key)) {
+    await touchSession();
+  }
   if (event.key === 'Escape') {
     if (!movieModal.classList.contains('hidden')) {
       closeMovieModal();
@@ -318,11 +426,14 @@ loginForm.addEventListener('submit', async (event) => {
       throw new Error(data.error || 'No se pudo iniciar sesión');
     }
 
+    sessionToken = data.user.token;
     currentUser = data.user;
+    localStorage.setItem('streamverse_token', sessionToken);
     updateProfileUI();
     loginScreen.classList.add('hidden');
     appShell.classList.remove('hidden');
     await loadContent();
+    scheduleSessionTimeout();
   } catch (error) {
     authMessage.textContent = error.message;
   }
@@ -348,14 +459,18 @@ registerForm.addEventListener('submit', async (event) => {
       throw new Error(data.error || 'No se pudo crear la cuenta');
     }
 
+    sessionToken = data.user.token;
     currentUser = data.user;
+    localStorage.setItem('streamverse_token', sessionToken);
     updateProfileUI();
     loginScreen.classList.add('hidden');
     appShell.classList.remove('hidden');
     await loadContent();
+    scheduleSessionTimeout();
   } catch (error) {
     registerMessage.textContent = error.message;
   }
 });
 
 loadContent();
+restoreSession();
