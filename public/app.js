@@ -222,10 +222,20 @@ async function logoutUser() {
 
 function scheduleSessionTimeout() {
   clearSessionTimer();
+  let timeoutMs = SESSION_LIFETIME_MS;
+  try {
+    if (currentUser?.expiresAt) {
+      const remaining = new Date(currentUser.expiresAt).getTime() - Date.now();
+      timeoutMs = Math.max(0, remaining);
+    }
+  } catch (e) {
+    timeoutMs = SESSION_LIFETIME_MS;
+  }
+
   sessionTimer = setTimeout(async () => {
     await logoutUser();
     authMessage.textContent = 'Tu sesión expiró por inactividad.';
-  }, SESSION_LIFETIME_MS);
+  }, timeoutMs);
 }
 
 async function touchSession() {
