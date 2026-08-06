@@ -245,8 +245,10 @@ async function touchSession() {
     }
     if (data.refreshed?.expiresAt) {
       currentUser = { ...currentUser, expiresAt: data.refreshed.expiresAt };
+      scheduleSessionTimeout();
+    } else {
+      throw new Error('No se pudo refrescar la sesión');
     }
-    scheduleSessionTimeout();
   } catch (error) {
     console.warn('No se pudo refrescar la sesión', error);
     await logoutUser();

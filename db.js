@@ -173,7 +173,7 @@ async function ensureSchema(connection) {
       id INT AUTO_INCREMENT PRIMARY KEY,
       user_id INT NOT NULL,
       token VARCHAR(64) NOT NULL UNIQUE,
-      created_at DATETIME NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
       expires_at DATETIME NOT NULL,
       revoked_at DATETIME NULL,
       FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -185,7 +185,7 @@ async function createSession(connection, userId) {
   const token = generateToken();
 
   const [result] = await connection.execute(
-    'INSERT INTO sessions (user_id, token, created_at, expires_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 SECOND))',
+    'INSERT INTO sessions (user_id, token, created_at, expires_at) VALUES (?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 SECOND))',
     [userId, token]
   );
 
@@ -199,18 +199,20 @@ async function createSession(connection, userId) {
 }
 
 async function refreshSessionToken(connection, token) {
-  await connection.execute('UPDATE sessions SET expires_at = DATE_ADD(NOW(), INTERVAL 30 SECOND) WHERE token = ? AND revoked_at IS NULL', [token]);
+  await connection.execute('UPDATE sessions SET expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 SECOND) WHERE token = ? AND revoked_at IS NULL', [token]);
 
   const [rows] = await connection.execute('SELECT expires_at FROM sessions WHERE token = ? AND revoked_at IS NULL', [token]);
-  const expiresAt = rows[0]?.expires_at ? new Date(rows[0].expires_at).toISOString() : new Date(Date.now() + 30_000).toISOString();
+  if (!rows[0]) {
+    return null;
+  }
 
   return {
-    expiresAt
+    expiresAt: new Date(rows[0].expires_at).toISOString()
   };
 }
 
 async function revokeSession(connection, token) {
-  await connection.execute('UPDATE sessions SET revoked_at = CURRENT_TIMESTAMP WHERE token = ? AND revoked_at IS NULL', [token]);
+  await connection.execute('UPDATE sessions SET revoked_at = UTC_TIMESTAMP() WHERE token = ? AND revoked_at IS NULL', [token]);
 }
 
 async function seedContentIfEmpty(connection) {
