@@ -192,6 +192,8 @@ async function createSession(connection, userId) {
   const [rows] = await connection.execute('SELECT expires_at FROM sessions WHERE id = ?', [result.insertId]);
   const expiresAt = rows[0]?.expires_at ? new Date(rows[0].expires_at).toISOString() : new Date(Date.now() + 30_000).toISOString();
 
+  console.log(`🔐 Created session user=${userId} token=${token} expiresAt=${expiresAt}`);
+
   return {
     token,
     expiresAt
@@ -203,16 +205,18 @@ async function refreshSessionToken(connection, token) {
 
   const [rows] = await connection.execute('SELECT expires_at FROM sessions WHERE token = ? AND revoked_at IS NULL', [token]);
   if (!rows[0]) {
+    console.log(`❌ Refresh failed, token not found or revoked: ${token}`);
     return null;
   }
 
-  return {
-    expiresAt: new Date(rows[0].expires_at).toISOString()
-  };
+  const expiresAt = new Date(rows[0].expires_at).toISOString();
+  console.log(`🔁 Refreshed session token=${token} newExpiresAt=${expiresAt}`);
+  return { expiresAt };
 }
 
 async function revokeSession(connection, token) {
   await connection.execute('UPDATE sessions SET revoked_at = UTC_TIMESTAMP() WHERE token = ? AND revoked_at IS NULL', [token]);
+  console.log(`✖️ Revoked session token=${token}`);
 }
 
 async function seedContentIfEmpty(connection) {
@@ -240,6 +244,24 @@ async function getContent() {
     await ensureSchema(connection);
     await seedContentIfEmpty(connection);
     const [rows] = await connection.execute('SELECT id, title, category, description, image, year, rating FROM contenido ORDER BY id');
+    return rows;
+  } finally {
+    await connection.end();
+  }
+}
+
+async function listSessions() {
+  const connection = await getConnection();
+  if (!connection) return [];
+
+  try {
+    await ensureSchema(connection);
+    const [rows] = await connection.execute(`
+      SELECT s.id, s.user_id, s.token, s.expires_at, s.revoked_at, u.email, u.name
+      FROM sessions s
+      LEFT JOIN usuarios u ON s.user_id = u.id
+      ORDER BY s.id DESC
+    `);
     return rows;
   } finally {
     await connection.end();

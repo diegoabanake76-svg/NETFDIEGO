@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const { getContent, authenticateUser, registerUser, validateSession, refreshSession, logoutSession } = require('./db');
+const { getContent, authenticateUser, registerUser, validateSession, refreshSession, logoutSession, listSessions } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -109,6 +109,22 @@ app.post('/api/register', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message || 'Error al crear el usuario' });
+  }
+});
+
+// Debug: listar sesiones (protegido por DEBUG_SECRET)
+app.get('/api/debug/sessions', async (req, res) => {
+  try {
+    const secret = req.query.secret;
+    if (!process.env.DEBUG_SECRET || secret !== process.env.DEBUG_SECRET) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const sessions = await listSessions();
+    res.json({ success: true, sessions });
+  } catch (error) {
+    console.error('❌ Error debug sessions:', error.message);
+    res.status(500).json({ error: 'No se pudieron listar las sesiones' });
   }
 });
 
