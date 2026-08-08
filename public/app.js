@@ -11,6 +11,9 @@ const profileMenuName = document.getElementById('profile-menu-name');
 const profileMenuEmail = document.getElementById('profile-menu-email');
 const showRegisterBtn = document.getElementById('show-register');
 const showLoginBtn = document.getElementById('show-login');
+const landingPage = document.getElementById('landing-page');
+const landingLoginBtn = document.getElementById('landing-login-button');
+const landingRegisterBtn = document.getElementById('landing-register-button');
 const movieModal = document.getElementById('movie-modal');
 const modalTitle = document.getElementById('modal-title');
 const modalDescription = document.getElementById('modal-description');
@@ -139,6 +142,18 @@ function showAuthMode(mode) {
     authMessage.textContent = '';
     registerMessage.textContent = '';
   }
+}
+
+function showLanding() {
+  if (landingPage) landingPage.classList.remove('hidden');
+  loginScreen.classList.add('hidden');
+  appShell.classList.add('hidden');
+}
+
+function openAuth(mode) {
+  if (landingPage) landingPage.classList.add('hidden');
+  loginScreen.classList.remove('hidden');
+  showAuthMode(mode);
 }
 
 function showView(viewName) {
@@ -311,6 +326,8 @@ function closePlayer() {
 
 showRegisterBtn.addEventListener('click', () => showAuthMode('register'));
 showLoginBtn.addEventListener('click', () => showAuthMode('login'));
+landingLoginBtn?.addEventListener('click', () => openAuth('login'));
+landingRegisterBtn?.addEventListener('click', () => openAuth('register'));
 closeModalBtn.addEventListener('click', closeMovieModal);
 closePlayerBtn.addEventListener('click', closePlayer);
 resumeBtn.addEventListener('click', () => {
